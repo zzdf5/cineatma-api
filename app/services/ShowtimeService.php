@@ -42,6 +42,21 @@ class ShowtimeService
         ];
     }
 
+    public function getShowtimesByMovieId($id)
+    {
+        $movie = $this->movieModel->getMoviesById($id);
+        if (!$movie) {
+            throw new Exception('Movie not found', 404);
+        }
+
+        $showtimes = $this->showtimeModel->getAllShowtimesByMovieId($id);
+
+        return [
+            'success' => true,
+            'data' => $showtimes
+        ];
+    }
+
     public function insertShowtime($movieId, $studioId, $date, $time, $price)
     {
         $movie = $this->movieModel->getMoviesById($movieId);
@@ -96,6 +111,45 @@ class ShowtimeService
         return [
             'success' => true,
             'message' => 'Showtime deleted successfully'
+        ];
+    }
+
+    public function updateShowtime($id, $movieId, $studioId, $date, $time, $price)
+    {
+        $showtime = $this->showtimeModel->getShowtimeById($id);
+        if (!$showtime) {
+            throw new Exception('Showtime not found', 404);
+        }
+
+        $movie = $this->movieModel->getMoviesById($movieId);
+        if (!$movie) {
+            throw new Exception('Movie not found', 404);
+        }
+
+        $studio = $this->studioModel->getStudioById($studioId);
+        if (!$studio) {
+            throw new Exception('Studio not found', 404);
+        }
+
+        $d = DateTime::createFromFormat('Y-m-d', $date);
+        if (!$d || $d->format('Y-m-d') !== $date) {
+            throw new Exception('Invalid date format, expected YYYY-MM-DD', 400);
+        }
+
+        $t = DateTime::createFromFormat('H:i:s', $time);
+        if (!$t || $t->format('H:i:s') !== $time) {
+            throw new Exception('Invalid time format, expected HH:MM:SS', 400);
+        }
+
+        $updatedShowtime = $this->showtimeModel->updateShowtime($id, $movieId, $studioId, $date, $time, $price);
+        if (!$updatedShowtime) {
+            throw new Exception('Failed to update showtime');
+        }
+
+        return [
+            'success' => true,
+            'message' => 'Showtime updated successfully',
+            'data' => $updatedShowtime
         ];
     }
 }

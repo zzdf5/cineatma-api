@@ -75,6 +75,9 @@ class UserService
         if ($this->userModel->getUserByEmail($email)) {
             throw new Exception("Email already registered", 409);
         }
+        if ($this->userModel->getUserByUsername($username)) {
+            throw new Exception("Username already registered", 409);
+        }
 
         $userData = [
             'username' => $username,
@@ -165,6 +168,108 @@ class UserService
         return [
             'success' => true,
             'message' => 'User registered successfully'
+        ];
+    }
+
+    public function updateProfile($userId, $username, $name, $phone, $city)
+    {
+        $user = $this->userModel->getUserById($userId);
+        if (!$user) {
+            throw new Exception('User not found', 404);
+        }
+
+        if (preg_match('/\s/', $username)) {
+            throw new Exception("Username cannot contain spaces", 400);
+        }
+
+        if ($this->userModel->getUserByUsername($username) && $username != $user['username']) {
+            throw new Exception("Username already registered", 409);
+        }
+
+        $updatedUser = $this->userModel->updateProfile($userId, $username, $name, $phone, $city);
+        if (!$updatedUser) {
+            throw new Exception("Failed to update profile", 500);
+        }
+
+        return [
+            'success' => true,
+            'message' => 'Profile updated successfully'
+        ];
+    }
+
+    public function updateAvatar($userId, $file)
+    {
+        $user = $this->userModel->getUserById($userId);
+        if (!$user) {
+            throw new Exception("User not found", 404);
+        }
+
+        if (!isset($file) || $file['error'] !== UPLOAD_ERR_OK) {
+            throw new Exception("Avatar file is required", 400);
+        }
+
+        if (!empty($user['avatar']) && str_starts_with($user['avatar'], '/avatar_user/')) {
+            $oldPath = __DIR__ . '/../../public' . $user['avatar'];
+            if (file_exists($oldPath)) {
+                unlink($oldPath);
+            }
+        }
+
+        $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $allowed = ['jpg', 'jpeg', 'png', 'webp'];
+        if (!in_array(strtolower($ext), $allowed)) {
+            throw new Exception("Invalid file type", 400);
+        }
+
+        $filename = uniqid('avatar_') . '.' . $ext;
+        $targetDir = __DIR__ . '/../../public/avatar_user/';
+        if (!is_dir($targetDir) && !mkdir($targetDir, 0777, true)) {
+            throw new Exception("Failed to create avatar directory", 500);
+        }
+
+        $targetPath = $targetDir . $filename;
+        if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
+            throw new Exception("Failed to upload avatar file", 500);
+        }
+
+        $avatarPath = '/avatar_user/' . $filename;
+
+        $updated = $this->userModel->updateAvatar($userId, $avatarPath);
+        if (!$updated) {
+            throw new Exception("Failed to update avatar in database", 500);
+        }
+
+        return [
+            'success' => true,
+            'message' => 'Avatar updated successfully',
+            'avatar' => $avatarPath
+        ];
+    }
+
+    public function updatePassword($userId, $currentPassword, $newPassword)
+    {
+        if (strlen($newPassword) < 8) {
+            throw new Exception("New password must be at least 8 characters", 400);
+        }
+
+        $user = $this->userModel->getUserById($userId);
+        if (!$user) {
+            throw new Exception("User not found", 404);
+        }
+
+        if (!password_verify($currentPassword, $user['password'])) {
+            throw new Exception("Current password is incorrect", 401);
+        }
+
+        $updated = $this->userModel->updatePassword($userId, $newPassword);
+
+        if (!$updated) {
+            throw new Exception("Failed to update password", 500);
+        }
+
+        return [
+            'success' => true,
+            'message' => 'Password updated successfully'
         ];
     }
 }

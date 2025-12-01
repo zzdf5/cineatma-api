@@ -49,6 +49,23 @@ class UserModel
         return $user ?: null;
     }
 
+    public function getUserByUsername($username)
+    {
+        $stmt = $this->conn->prepare("SELECT * FROM users WHERE username = ?");
+
+        if (!$stmt) {
+            throw new Exception("Failed to prepare statement: " . $this->conn->error);
+        }
+
+        $stmt->bind_param("s", $username);
+        $stmt->execute();
+
+        $result = $stmt->get_result();
+        $user = $result->fetch_assoc();
+
+        return $user ?: null;
+    }
+
     public function getUserById($id)
     {
         $stmt = $this->conn->prepare("SELECT * FROM users WHERE id = ?");
@@ -64,5 +81,40 @@ class UserModel
         $user = $result->fetch_assoc();
 
         return $user ?: null;
+    }
+
+    public function updateProfile($id, $username, $name, $phone, $city)
+    {
+        $stmt = $this->conn->prepare("
+            UPDATE users 
+            SET username = ?, name = ?, phone = ?, city = ? WHERE id = ?
+        ");
+        if (!$stmt) {
+            throw new Exception("Failed to prepare statement: " . $this->conn->error);
+        }
+
+        $stmt->bind_param("ssssi", $username, $name, $phone, $city, $id);
+        return $stmt->execute();
+    }
+
+    public function updateAvatar($id, $avatarPath)
+    {
+        $stmt = $this->conn->prepare("UPDATE users SET avatar = ? WHERE id = ?");
+        if (!$stmt) {
+            throw new Exception("Failed to prepare statement: " . $this->conn->error);
+        }
+
+        $stmt->bind_param("si", $avatarPath, $id);
+        return $stmt->execute();
+    }
+
+    public function updatePassword($id, $password)
+    {
+        $stmt = $this->conn->prepare("UPDATE users SET password = ? WHERE id = ?");
+        if (!$stmt) throw new Exception("Failed to prepare statement: " . $this->conn->error);
+
+        $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
+        $stmt->bind_param("si", $hashedPassword, $id);
+        return $stmt->execute();
     }
 }

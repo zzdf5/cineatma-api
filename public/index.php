@@ -22,11 +22,15 @@ $routes = [
         '/api/login' => [$userController, 'login'],
         '/api/logout' => [$userController, 'logout'],
 
+        // Account
+        '/api/user/{id}/avatar' => [$userController, 'updateAvatar'],
+
         // Studio
         '/api/studio' => [$studioController, 'store'],
 
         // Movie
         '/api/movie' => [$movieController, 'store'],
+        '/api/movie/{id}/poster' => [$movieController, 'updatePoster'],
 
         // Showtime
         '/api/showtime' => [$showtimeController, 'store'],
@@ -49,6 +53,7 @@ $routes = [
         // Showtime
         '/api/showtimes' => [$showtimeController, 'index'],
         '/api/showtime/{id}' => [$showtimeController, 'show'],
+        '/api/showtime/movie/{id}' => [$showtimeController, 'getByMovieId'],
 
         // Booking
         '/api/bookings' => [$bookingController, 'index'],
@@ -68,6 +73,23 @@ $routes = [
 
         // Booking
         '/api/booking/{id}' => [$bookingController, 'destroy']
+    ],
+    'PUT' => [
+        // Account
+        '/api/user/{id}' => [$userController, 'updateProfile'],
+        '/api/user/{id}/password' => [$userController, 'updatePassword'],
+
+        // Studio
+        '/api/studio/{id}' => [$studioController, 'update'],
+
+        // Showtime
+        '/api/showtime/{id}' => [$showtimeController, 'update'],
+
+        // Booking
+        '/api/booking/{id}' => [$bookingController, 'update'],
+
+        // Movie
+        '/api/movie/{id}' => [$movieController, 'update'],
     ]
 ];
 

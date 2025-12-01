@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . "./../services/UserService.php";
+require_once __DIR__ . "./../helpers/HandleException.php";
 
 class UserController
 {
@@ -36,12 +37,7 @@ class UserController
             http_response_code(201);
             echo json_encode($response);
         } catch (Exception $e) {
-            $code = $e->getCode() ?: 400; // default ke 400 jika code = 0
-            http_response_code($code);
-            echo json_encode([
-                'success' => false,
-                'message' => $e->getMessage()
-            ]);
+            HandleException::handle($e);
         }
     }
 
@@ -59,12 +55,7 @@ class UserController
             http_response_code(200);
             echo json_encode($response);
         } catch (Exception $e) {
-            $code = $e->getCode() ?: 400;
-            http_response_code($code);
-            echo json_encode([
-                'success' => false,
-                'message' => $e->getMessage()
-            ]);
+            HandleException::handle($e);
         }
     }
 
@@ -77,12 +68,7 @@ class UserController
             http_response_code(200);
             echo json_encode($response);
         } catch (Exception $e) {
-            $code = $e->getCode() ?: 400;
-            http_response_code($code);
-            echo json_encode([
-                'success' => false,
-                'message' => $e->getMessage()
-            ]);
+            HandleException::handle($e);
         }
     }
 
@@ -100,12 +86,79 @@ class UserController
             http_response_code(200);
             echo json_encode($response);
         } catch (Exception $e) {
-            $code = $e->getCode() ?: 400;
-            http_response_code($code);
-            echo json_encode([
-                'success' => false,
-                'message' => $e->getMessage()
-            ]);
+            HandleException::handle($e);
+        }
+    }
+
+    public function updateProfile($id)
+    {
+        $data = json_decode(file_get_contents("php://input"), true);
+        header('Content-Type: application/json');
+
+        try {
+            $required = ['username', 'name', 'phone', 'city'];
+            foreach ($required as $field) {
+                if (!isset($data[$field])) {
+                    throw new Exception("Missing required field: $field", 400);
+                }
+            }
+
+            $response = $this->userService->updateProfile(
+                $id,
+                $data['username'],
+                $data['name'],
+                $data['phone'],
+                $data['city']
+            );
+
+            http_response_code(200);
+            echo json_encode($response);
+        } catch (Exception $e) {
+            HandleException::handle($e);
+        }
+    }
+
+    public function updateAvatar($id)
+    {
+        header('Content-Type: application/json');
+
+        try {
+            if (!isset($_FILES['avatar'])) {
+                throw new Exception("Avatar file is required", 400);
+            }
+
+            $response = $this->userService->updateAvatar($id, $_FILES['avatar']);
+
+            http_response_code(200);
+            echo json_encode($response);
+        } catch (Exception $e) {
+            HandleException::handle($e);
+        }
+    }
+
+    public function updatePassword($id)
+    {
+        $data = json_decode(file_get_contents("php://input"), true);
+        header('Content-Type: application/json');
+
+        try {
+            $required = ['current_password', 'new_password'];
+            foreach ($required as $field) {
+                if (!isset($data[$field])) {
+                    throw new Exception("Missing required field: $field", 400);
+                }
+            }
+
+            $response = $this->userService->updatePassword(
+                $id,
+                $data['current_password'],
+                $data['new_password']
+            );
+
+            http_response_code(200);
+            echo json_encode($response);
+        } catch (Exception $e) {
+            HandleException::handle($e);
         }
     }
 }

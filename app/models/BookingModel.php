@@ -131,4 +131,22 @@ class BookingModel
         $result = $stmt->get_result()->fetch_assoc();
         return (int)$result['c'];
     }
+
+    public function updateBooking($id, $showtimeId, $seatCode, $paymentMethod)
+    {
+        $stmt = $this->conn->prepare("
+            UPDATE bookings
+            SET showtime_id = ?, seat_code = ?, payment_method = ?
+            WHERE id = ?
+        ");
+
+        if (!$stmt) {
+            throw new Exception("Failed to prepare statement: " . $this->conn->error);
+        }
+
+        $stmt->bind_param("issi", $showtimeId, $seatCode, $paymentMethod, $id);
+        $stmt->execute();
+
+        return $this->getBookingById($id);
+    }
 }

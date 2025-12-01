@@ -81,4 +81,22 @@ class StudioModel
         $result = $stmt->get_result()->fetch_assoc();
         return (int)$result['c'];
     }
+
+    public function updateStudio($id, $name, $seatCapacity, $type)
+    {
+        $stmt = $this->conn->prepare("
+            UPDATE studios
+            SET name = ?, seat_capacity = ?, type = ?
+            WHERE id = ?
+        ");
+
+        if (!$stmt) {
+            throw new Exception("Failed to prepare statement: " . $this->conn->error);
+        }
+
+        $stmt->bind_param("sisi", $name, $seatCapacity, $type, $id);
+        $stmt->execute();
+
+        return $this->getStudioById($id);
+    }
 }

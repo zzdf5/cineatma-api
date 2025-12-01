@@ -139,4 +139,80 @@ class MovieModel
         $result = $stmt->get_result()->fetch_assoc();
         return (int)$result['c'];
     }
+
+    public function updateMovie($id, $title, $genre, $trailer, $description, $duration_minutes, $release_date, $director, $cast, $production_company, $status)
+    {
+        $stmtGet = $this->conn->prepare("SELECT movie_detail_id FROM movies WHERE id = ?");
+        if (!$stmtGet) {
+            throw new Exception("Failed to prepare statement: " . $this->conn->error);
+        }
+        $stmtGet->bind_param("i", $id);
+        $stmtGet->execute();
+        $result = $stmtGet->get_result()->fetch_assoc();
+        if (!$result) {
+            throw new Exception("Movie not found", 404);
+        }
+
+        $movieDetailId = $result['movie_detail_id'];
+
+        $stmtDetail = $this->conn->prepare("
+            UPDATE movies_detail
+            SET title = ?, genre = ?, trailer = ?, description = ?, duration_minutes = ?, release_date = ?
+            WHERE id = ?
+        ");
+        if (!$stmtDetail) throw new Exception("Failed to prepare statement: " . $this->conn->error);
+        $stmtDetail->bind_param(
+            "ssssiss",
+            $title,
+            $genre,
+            $trailer,
+            $description,
+            $duration_minutes,
+            $release_date,
+            $movieDetailId
+        );
+        $stmtDetail->execute();
+
+        $stmtMovie = $this->conn->prepare("
+            UPDATE movies
+            SET director = ?, cast = ?, production_company = ?, status = ?
+            WHERE id = ?
+        ");
+        if (!$stmtMovie) throw new Exception("Failed to prepare statement: " . $this->conn->error);
+        $stmtMovie->bind_param(
+            "ssssi",
+            $director,
+            $cast,
+            $production_company,
+            $status,
+            $id
+        );
+        $stmtMovie->execute();
+
+        return $this->getMoviesById($id);
+    }
+
+    public function updatePoster($id, $poster)
+    {
+        $stmtGet = $this->conn->prepare("SELECT movie_detail_id FROM movies WHERE id = ?");
+        $stmtGet->bind_param("i", $id);
+        $stmtGet->execute();
+        $result = $stmtGet->get_result()->fetch_assoc();
+
+        if (!$result) {
+            throw new Exception("Movie not found", 404);
+        }
+
+        $movieDetailId = $result['movie_detail_id'];
+
+        $stmt = $this->conn->prepare("
+            UPDATE movies_detail
+            SET poster = ?
+            WHERE id = ?
+        ");
+        $stmt->bind_param("si", $poster, $movieDetailId);
+        $stmt->execute();
+
+        return $this->getMoviesById($id);
+    }
 }

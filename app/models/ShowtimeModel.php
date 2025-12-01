@@ -133,6 +133,71 @@ class ShowtimeModel
         ];
     }
 
+    public function getAllShowtimesByMovieId($movieId)
+    {
+        $stmt = $this->conn->prepare("
+        SELECT 
+            s.id AS showtime_id, s.date, s.time, s.price, s.created_at AS showtime_created_at,
+            
+            m.id AS movie_id, m.director, m.cast, m.production_company, m.status AS movie_status, m.created_at AS movie_created_at,
+            md.title, md.genre, md.poster, md.trailer, md.description, md.duration_minutes, md.release_date,
+            
+            st.id AS studio_id, st.name AS studio_name, st.seat_capacity, st.type AS studio_type, st.created_at AS studio_created_at
+        FROM showtimes s
+        INNER JOIN movies m ON s.movie_id = m.id
+        INNER JOIN movies_detail md ON m.movie_detail_id = md.id
+        INNER JOIN studios st ON s.studio_id = st.id
+        WHERE m.id = ?
+        ORDER BY s.date, s.time
+    ");
+
+        if (!$stmt) {
+            throw new Exception("Failed to prepare statement: " . $this->conn->error);
+        }
+
+        $stmt->bind_param("i", $movieId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $showtimes = [];
+        while ($row = $result->fetch_assoc()) {
+            $showtimes[] = [
+                "id" => (int)$row["showtime_id"],
+                "date" => $row["date"],
+                "time" => $row["time"],
+                "price" => (int)$row["price"],
+                "movie" => [
+                    "id" => (int)$row["movie_id"],
+                    "director" => $row["director"],
+                    "cast" => $row["cast"],
+                    "production_company" => $row["production_company"],
+                    "status" => $row["movie_status"],
+                    "detail" => [
+                        "title" => $row["title"],
+                        "genre" => $row["genre"],
+                        "poster" => $row["poster"],
+                        "trailer" => $row["trailer"],
+                        "description" => $row["description"],
+                        "duration_minutes" => (int)$row["duration_minutes"],
+                        "release_date" => $row["release_date"]
+                    ],
+                    "created_at" => $row["movie_created_at"]
+                ],
+                "studio" => [
+                    "id" => (int)$row["studio_id"],
+                    "name" => $row["studio_name"],
+                    "seat_capacity" => (int)$row["seat_capacity"],
+                    "type" => $row["studio_type"],
+                    "created_at" => $row["studio_created_at"]
+                ],
+                "created_at" => $row["showtime_created_at"]
+            ];
+        }
+
+        return $showtimes;
+    }
+
+
     public function insertShowtime($movieId, $studioId, $date, $time, $price)
     {
         $stmt = $this->conn->prepare("
@@ -161,5 +226,23 @@ class ShowtimeModel
 
         $stmt->bind_param("i", $id);
         return $stmt->execute();
+    }
+
+    public function updateShowtime($id, $movieId, $studioId, $date, $time, $price)
+    {
+        $stmt = $this->conn->prepare("
+            UPDATE showtimes
+            SET movie_id = ?, studio_id = ?, date = ?, time = ?, price = ?
+            WHERE id = ?
+        ");
+
+        if (!$stmt) {
+            throw new Exception("Failed to prepare statement: " . $this->conn->error);
+        }
+
+        $stmt->bind_param("iissii", $movieId, $studioId, $date, $time, $price, $id);
+        $stmt->execute();
+
+        return $this->getShowtimeById($id);
     }
 }

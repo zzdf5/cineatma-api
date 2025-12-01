@@ -20,11 +20,7 @@ class MovieController
             http_response_code(200);
             echo json_encode($response);
         } catch (Exception $e) {
-            http_response_code($e->getCode() ?: 500);
-            echo json_encode([
-                'success' => false,
-                'message' => $e->getMessage()
-            ]);
+            HandleException::handle($e);
         }
     }
 
@@ -37,11 +33,7 @@ class MovieController
             http_response_code(200);
             echo json_encode($response);
         } catch (Exception $e) {
-            http_response_code($e->getCode() ?: 404);
-            echo json_encode([
-                'success' => false,
-                'message' => $e->getMessage()
-            ]);
+            HandleException::handle($e);
         }
     }
 
@@ -84,11 +76,7 @@ class MovieController
             http_response_code(201);
             echo json_encode($response);
         } catch (Exception $e) {
-            http_response_code($e->getCode() ?: 400);
-            echo json_encode([
-                'success' => false,
-                'message' => $e->getMessage()
-            ]);
+            HandleException::handle($e);
         }
     }
 
@@ -101,11 +89,66 @@ class MovieController
             http_response_code(200);
             echo json_encode($response);
         } catch (Exception $e) {
-            http_response_code($e->getCode() ?: 400);
-            echo json_encode([
-                'success' => false,
-                'message' => $e->getMessage()
-            ]);
+            HandleException::handle($e);
+        }
+    }
+
+    public function update($id)
+    {
+        header('Content-Type: application/json');
+
+        try {
+            $data = json_decode(file_get_contents("php://input"), true);
+
+            $required = ['title', 'genre', 'trailer', 'description', 'duration_minutes', 'release_date', 'director', 'cast', 'production_company', 'status'];
+            $missing = [];
+
+            foreach ($required as $field) {
+                if (!isset($data[$field]) || $data[$field] === '') {
+                    $missing[] = $field;
+                }
+            }
+
+            if (!empty($missing)) {
+                throw new Exception("Missing required fields: " . implode(", ", $missing));
+            }
+
+            $response = $this->movieService->updateMovie(
+                $id,
+                $data['title'],
+                $data['genre'],
+                $data['trailer'],
+                $data['description'],
+                $data['duration_minutes'],
+                $data['release_date'],
+                $data['director'],
+                $data['cast'],
+                $data['production_company'],
+                $data['status']
+            );
+
+            http_response_code(200);
+            echo json_encode($response);
+        } catch (Exception $e) {
+            HandleException::handle($e);
+        }
+    }
+
+    public function updatePoster($id)
+    {
+        header('Content-Type: application/json');
+
+        try {
+            if (!isset($_FILES['poster'])) {
+                throw new Exception("Poster file is required");
+            }
+
+            $response = $this->movieService->updatePoster($id, $_FILES['poster']);
+
+            http_response_code(200);
+            echo json_encode($response);
+        } catch (Exception $e) {
+            HandleException::handle($e);
         }
     }
 }

@@ -20,11 +20,7 @@ class ShowtimeController
             http_response_code(200);
             echo json_encode($response);
         } catch (Exception $e) {
-            http_response_code($e->getCode() ?: 500);
-            echo json_encode([
-                'success' => false,
-                'message' => $e->getMessage()
-            ]);
+            HandleException::handle($e);
         }
     }
 
@@ -37,11 +33,20 @@ class ShowtimeController
             http_response_code(200);
             echo json_encode($response);
         } catch (Exception $e) {
-            http_response_code($e->getCode() ?: 404);
-            echo json_encode([
-                'success' => false,
-                'message' => $e->getMessage()
-            ]);
+            HandleException::handle($e);
+        }
+    }
+
+    public function getByMovieId($movieId)
+    {
+        header('Content-Type: application/json');
+
+        try {
+            $response = $this->showtimeService->getShowtimesByMovieId($movieId);
+            http_response_code(200);
+            echo json_encode($response);
+        } catch (Exception $e) {
+            HandleException::handle($e);
         }
     }
 
@@ -75,11 +80,7 @@ class ShowtimeController
             http_response_code(201);
             echo json_encode($response);
         } catch (Exception $e) {
-            http_response_code($e->getCode() ?: 400);
-            echo json_encode([
-                'success' => false,
-                'message' => $e->getMessage()
-            ]);
+            HandleException::handle($e);
         }
     }
 
@@ -92,11 +93,42 @@ class ShowtimeController
             http_response_code(200);
             echo json_encode($response);
         } catch (Exception $e) {
-            http_response_code($e->getCode() ?: 400);
-            echo json_encode([
-                'success' => false,
-                'message' => $e->getMessage()
-            ]);
+            HandleException::handle($e);
+        }
+    }
+
+    public function update($id)
+    {
+        header('Content-Type: application/json');
+
+        try {
+            $data = json_decode(file_get_contents("php://input"), true);
+
+            $required = ['movie_id', 'studio_id', 'date', 'time', 'price'];
+            $missing = [];
+            foreach ($required as $field) {
+                if (!isset($data[$field]) || $data[$field] === '') {
+                    $missing[] = $field;
+                }
+            }
+
+            if (!empty($missing)) {
+                throw new Exception("Missing required fields: " . implode(", ", $missing), 400);
+            }
+
+            $response = $this->showtimeService->updateShowtime(
+                $id,
+                $data['movie_id'],
+                $data['studio_id'],
+                $data['date'],
+                $data['time'],
+                $data['price']
+            );
+
+            http_response_code(200);
+            echo json_encode($response);
+        } catch (Exception $e) {
+            HandleException::handle($e);
         }
     }
 }

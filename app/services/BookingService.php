@@ -107,4 +107,33 @@ class BookingService
             "message" => "Booking deleted successfully"
         ];
     }
+
+    public function updateBooking($id, $showtimeId, $seatCode, $paymentMethod)
+    {
+        $booking = $this->bookingModel->getBookingById($id);
+        if (!$booking) {
+            throw new Exception("Booking not found", 404);
+        }
+
+        $showtime = $this->showtimeModel->getShowtimeById($showtimeId);
+        if (!$showtime) {
+            throw new Exception("Showtime not found", 404);
+        }
+
+        $validPayments = ['bank', 'credit_card', 'e-wallet'];
+        if (!in_array($paymentMethod, $validPayments)) {
+            throw new Exception("Invalid payment method", 400);
+        }
+
+        $updatedBooking = $this->bookingModel->updateBooking($id, $showtimeId, $seatCode, $paymentMethod);
+        if (!$updatedBooking) {
+            throw new Exception("Failed to update booking");
+        }
+
+        return [
+            "success" => true,
+            "message" => "Booking updated successfully",
+            "data" => $updatedBooking
+        ];
+    }
 }

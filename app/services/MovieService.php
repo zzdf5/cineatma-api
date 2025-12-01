@@ -108,4 +108,71 @@ class MovieService
             "message" => "Movie deleted successfully"
         ];
     }
+
+    public function updateMovie($id, $title, $genre, $trailer, $description, $duration_minutes, $release_date, $director, $cast, $production_company, $status)
+    {
+        $movie = $this->movieModel->getMoviesById($id);
+        if (!$movie) {
+            throw new Exception("Movie not found", 404);
+        }
+
+        $updatedMovie = $this->movieModel->updateMovie(
+            $id,
+            $title,
+            $genre,
+            $trailer,
+            $description,
+            $duration_minutes,
+            $release_date,
+            $director,
+            $cast,
+            $production_company,
+            $status
+        );
+
+        return [
+            "success" => true,
+            "message" => "Movie updated successfully",
+            "data" => $updatedMovie
+        ];
+    }
+
+    public function updatePoster($id, $posterFile)
+    {
+        $movie = $this->movieModel->getMoviesById($id);
+        if (!$movie) {
+            throw new Exception("Movie not found", 404);
+        }
+
+        if (!isset($posterFile) || $posterFile['error'] !== UPLOAD_ERR_OK) {
+            throw new Exception("Poster file is required", 400);
+        }
+
+        $oldPath = __DIR__ . '/../../public' . $movie['detail']['poster'];
+        if (file_exists($oldPath)) {
+            unlink($oldPath);
+        }
+
+        $ext = pathinfo($posterFile['name'], PATHINFO_EXTENSION);
+        $filename = uniqid('poster_') . '.' . $ext;
+        $targetDir = __DIR__ . '/../../public/poster/';
+        if (!is_dir($targetDir) && !mkdir($targetDir, 0777, true)) {
+            throw new Exception("Failed to create poster directory", 500);
+        }
+
+        $targetPath = $targetDir . $filename;
+        if (!move_uploaded_file($posterFile['tmp_name'], $targetPath)) {
+            throw new Exception("Failed to upload poster file", 500);
+        }
+
+        $posterPath = '/poster/' . $filename;
+
+        $updatedMovie = $this->movieModel->updatePoster($id, $posterPath);
+
+        return [
+            "success" => true,
+            "message" => "Movie poster updated successfully",
+            "data" => $updatedMovie
+        ];
+    }
 }

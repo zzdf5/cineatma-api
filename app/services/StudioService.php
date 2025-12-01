@@ -69,4 +69,23 @@ class StudioService
             'message' => 'Studio deleted successfully'
         ];
     }
+
+    public function updateStudio($id, $name, $seatCapacity, $type)
+    {
+        $studio = $this->studioModel->getStudioById($id);
+        if (!$studio) {
+            throw new Exception('Studio not found', 404);
+        }
+
+        $updatedStudio = $this->studioModel->updateStudio($id, $name, $seatCapacity, $type);
+        if (!$updatedStudio) {
+            throw new Exception('Failed to update studio');
+        }
+
+        return [
+            'success' => true,
+            'message' => 'Studio updated successfully',
+            'studio' => $updatedStudio
+        ];
+    }
 }
